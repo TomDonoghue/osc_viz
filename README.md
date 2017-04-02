@@ -5,4 +5,4 @@ This is a simple EEG visualization project, created as a project for the Informa
 The project is viewable here: http://icogsci1.ucsd.edu/~tdonoghu/
 
 Disclaimer:
-- This project is pretty old, and I'm not js or D3 expert, so although it all works, no guarantees that it is done in any clever ways, or using best practices. 
+- This project is pretty old, and I'm not a js or D3 expert, so although it all works, no guarantees that it is done in any clever ways, or using best practices. 
