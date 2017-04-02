@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+	<meta charset="utf-8">
+	<title> Adding Waves </title>
+	<!--<script type="text/javascript" src="d3/d3.min.js"> </script> -->
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	<style>
+        .gline {
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .axis path, 
+        .axis line {
+            fill: none;
+            stroke: black;
+            stroke-width: 2;
+            shape-rendering: crispEdges;
+            opacity: 0.9;
+        }
+	</style>
+</head>
+
+<body>
+
+    <h1> Adding Sinusoidal Waves </h1>
+    <p> The most common approach to EEG research is to use an event related design in which stimuli of interest are presented to a participant, and evoked potentials are recorded. </p>
+    <p> </p>
+
+    <p> In the visualization below, are two sinusoidal signals. The blue line is a sinusoidal signal, and the red curve is a cosine signal (which, for our purposes here, is simply a sine wave shifted over). The black curve represents the sum of the two. </p>
+
+    <p> Since sinusoidal waves oscillate between positive and negative amplitudes, they can sumate in sometimes suprisings ways, depending on their relative phases and amplitudes. In the visualization below, the scroll bars allow you to manipulate the initial phase and amplitude of the blue sinusoid (the red one is fixed). By manipulating these parameters, you can drastically affect the black (sumated) curve. </p>
+    <p> This kind of sumating of sinusoides occurs when we average over trials in EEG. Play around with the parameters to see what results you can get. </p>
+
+    <div class="controls">
+        <label for=ampFader>Amplitude</label><br/>
+        <input type=range min=0, max=1.0 value=1.0 id="ampFader" step=0.01 width=150 oninput="updateAmp(value)";><br/>
+        <label for=freqFader>Phase Offset</label><br/>
+        <input type=range min=0, max=2.0 value=0 id="phaseOffset" step=0.01 width=150 oninput="updateOffset(value)";><br/>
+    </div>
+
+	<script type="text/javascript">
+
+    // Set up size of visualization
+	var w = 500;
+	var h = 400;
+    var padding = 40;
+
+    // Set base amplitude value
+    var amplitude = 1.0;
+    var startPhase = 0.0
+
+    //Set up functions for scales and axes
+    var xScale = d3.scale.linear()
+        .domain([0, d3.range(startPhase, startPhase + (4*Math.PI), 0.05).length])
+        .range([padding, w-padding*2]);
+
+    var yScale = d3.scale.linear()
+        .domain([-2, 2])
+        .range([h - padding, padding]);
+
+    var xAxis = d3.svg.axis()
+        .scale(xScale)
+        .orient("bottom")
+        .ticks(0)
+        .tickSize(0)
+
+    var yAxis = d3.svg.axis()
+        .scale(yScale)
+        .orient("left")
+        .ticks(5);
+
+    // Set up the svg
+    var svg = d3.select("body")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h);
+
+    // Functions to make lines
+	var lineFunctionSin = d3.svg.line()
+        .x(function(d, i) {return xScale(i); })
+        .y(function(d) {return yScale(amplitude * Math.sin(d)); })
+        .interpolate("basis");
+
+    var lineFunctionCos = d3.svg.line()
+        .x(function(d, i) {return xScale(i); })
+        .y(function(d) {return yScale(Math.cos(d)); })
+        .interpolate("basis");
+
+    var lineFunctionSum = d3.svg.line()
+        .x(function(d, i) {return xScale(i); })
+        .y(function(d) {return yScale(Math.cos(d-startPhase) + amplitude*Math.sin(d)); })
+        .interpolate("basis");
+
+	//The line SVG Path we draw
+	var lineOne = svg.append("path")
+        .attr("class", "gline")
+        .attr("d", lineFunctionSin(d3.range(startPhase, startPhase+(4*Math.PI), 0.05)))
+        .attr("stroke", "blue");
+
+    var lineTwo = svg.append("path")
+        .attr("class", "gline")
+        .attr("d", lineFunctionCos(d3.range(startPhase, startPhase+(4*Math.PI), 0.05)))
+        .attr("stroke", "red");
+
+    var resultant = svg.append("path")
+        .attr("class", "gline")
+        .attr("d", lineFunctionSum(d3.range(startPhase, startPhase+(4*Math.PI), 0.05)))
+    	.attr("stroke", "black");
+
+    //Add the axes
+    svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(0," + (h - padding) + ") ")
+            .call(xAxis);
+
+    svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(" + padding + ",0)")
+            .call(yAxis);
+
+    // Set up stuff for amplitude slider
+    vis_amp = 1.0
+    function updateAmp(amp) {
+        vis_amp = amp;
+    }
+
+    function get_amp() {
+        return vis_amp;
+    }
+
+    vis_offset = 0.0;
+    function updateOffset(offset) {
+        vis_offset = offset;
+    }
+    function get_offset() {
+        return vis_offset;
+    }
+
+    function draw() {
+        // Update amp
+        amplitude = get_amp();
+        startPhase = get_offset() - 1;
+        startPhase = (startPhase*Math.PI) + Math.PI;
+        lineOne
+            .attr("d", lineFunctionSin(d3.range(startPhase,startPhase + (4*Math.PI), 0.05)))
+
+        resultant
+            .attr("d", lineFunctionSum(d3.range(startPhase,startPhase + (4*Math.PI), 0.05)))
+        }
+    
+    d3.timer(draw, 10);
+
+	</script>
+
+</body>
+</html>

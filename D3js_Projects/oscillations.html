@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title> Oscillations </title>
+	<!--<script type="text/javascript" src="d3/d3.min.js"> </script>-->
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	<style>
+
+		.axis path, 
+		.axis line {
+			fill: none;
+			stroke: black;
+			stroke-width: 2;
+			shape-rendering: crispEdges;
+			opacity: 0.40;
+		}
+
+		.circle {
+			stroke-width: 0.5;
+			stroke: black;
+			fill: red;
+			opacity: 0.85;
+		}
+
+		.phaseText {
+			font-family: sans-serif;
+			font-size: 14px;
+		}
+
+	</style>
+</head>
+
+<body>
+
+	<h1> Oscillations </h1>
+
+	<p> Oscillations are rhythmic fluctuations.  </p>
+
+	<p> A <i><b>period</b></i> is the time it takes to finish one oscillation. </p>
+	<p> The <i><b> frequency </b></i> is the number of periods per second, measured in hertz (Hz). </p>
+	<p> The <i><b>phase</b></i> is where you are in the oscilation (or the angular position). </p>
+	<p> The <i><b> amplitude </b></i> is a measure of how much it changes over a single period.  </p>
+    <p> Below is a single period of an oscillation. The scroll bars allow you to manipulate the phase (as indicated by the red circle) and the amplitude of the oscillation. Notice that the phase and amplitude are completely independent. Also notice that phase pertains to a single point in time (here time is along the x-axis), whereas as amplitude refers to the amount of signal present across some time window.</p>
+
+	<div class="controls">
+		<!-- Phase Controller -->
+        <label for=freqFader>Phase</label><br/>
+        <input type=range min=0 max=1000 value=0 id="phaseFader" step=20 width=150 oninput="updatePhase(value);";><br/>
+        <!-- Amplitude Controller -->
+        <label for=ampFader>Amplitude</label><br/>
+        <input type=range min=0, max=1 value=1 id="ampFader" step=0.01 width=150 oninput="updateAmp(value);";><br/>
+    </div>
+
+	<script type="text/javascript">
+
+	    // Set up size of visualization
+		var w = 500;
+		var h = 400;
+    	var padding = 25;
+
+    	// Set up the svg
+    	var svg = d3.select("body")
+            .append("svg")
+            .attr("width", w)
+            .attr("height", h);
+
+        //Scales & axes 
+        var xScale = d3.scale.linear()
+        	.domain([0, 2 * Math.PI])
+            //.domain([-2*Math.PI, 2*Math.PI])
+            .range([padding, w-padding*2]);
+
+        var yScale = d3.scale.linear()
+            .domain([-1.1, 1.1])
+            .range([h - padding, padding]);
+
+        var xAxis = d3.svg.axis()
+        	.scale(xScale)
+        	.tickSize(0)
+        	.ticks(0)
+
+        var yAxis = d3.svg.axis()
+        	.scale(yScale)
+        	.orient("left")
+        	.tickSize(0)
+        	.ticks(3)
+
+        var amplitude = 0.5
+
+        // Sine line generator
+        var sine = d3.svg.line()
+        	.x(function(d,i) {return xScale(d); })
+        	.y(function(d,i) {return yScale(amplitude * Math.sin(d)); })
+
+        // Add the sine wave
+        var sinePath = svg.append("path")
+        	.attr("d", sine(d3.range(0, 2 * Math.PI, 0.05)))
+        	.attr("class", "gline")
+        	.attr("stroke-width", 2.0)
+        	.attr("stroke", "green")
+        	.attr("fill", "none");
+
+        // Add a circle
+        var circ = svg.append("circle")
+        	.attr("class", "circle")
+        	.attr("cx", xScale(0))
+        	.attr("cy", yScale(0))
+        	.attr("r", 5)
+
+
+        // Add the x axis
+        svg.append("g")
+        	.attr("class", "axis")
+        	.attr("transform", "translate(0," + (h/2) + ") ")
+        	.call(xAxis)
+
+        // Add the y axis
+        svg.append("g")
+        	.attr("class", "axis")
+        	.attr("transform", "translate(" + padding + ",0)")
+        	.call(yAxis)
+
+        // Add text for phase
+        var phaseTextDeg = svg.append("text")
+        	.attr("class", "phaseText")
+        	.attr("text-anchor", "end")
+        	.attr("x", w - padding - 20)
+        	.attr("y", padding + 10)
+        	.text("Phase: 45°")
+
+        var phaseTextRad = svg.append("text")
+        	.attr("class", "phaseText")
+        	.attr("text-anchor", "end")
+        	.attr("x", w - padding - 20)
+        	.attr("y", padding + 30)
+        	.text("Rad: ")
+
+        // Set up stuff for phase slider
+        // Adapted from DSP tutorial trig_review.html
+        var vis_phase = 0.125;
+        var target_phase = 0.125;
+        var phase_interpolator = d3.interpolateNumber(vis_phase, target_phase);
+        var phase_interpolation = 1.0;
+
+        function get_phase() {
+        	return phase_interpolator(Math.min(phase_interpolation, 1.0));
+        }
+
+        function updatePhase(phase) {
+        	vis_phase = get_phase();
+        	target_phase = phase/1000;
+        	phase_interpolation = 0.0;
+        	phase_interpolator = d3.interpolateNumber(vis_phase, target_phase);
+        }
+
+        // Set up stuff for amplitude slider
+        vis_amp = 1.0
+        function updateAmp(amp) {
+        	vis_amp = amp;
+        }
+
+        function get_amp() {
+        	return vis_amp;
+        }
+
+        // Draw the graph based on slider input
+		function draw() {
+			// Update phase & phase text
+			phase = get_phase() * 2 * Math.PI;
+			circ
+				.attr("cx", xScale(phase))
+				.attr("cy", yScale(amplitude * Math.sin(phase)));
+
+			phaseTextDeg.text("Phase: " + (phase * (180/Math.PI)).toPrecision(3) + "°");
+			phaseTextRad.text(phase.toPrecision(3) + " rad");
+
+			phase_interpolation +=0.1;
+
+			// Update amp
+			amplitude = get_amp()
+			sinePath
+				.attr("d", sine(d3.range(0, 2 * Math.PI, 0.05)))
+
+		}
+        	
+        d3.timer(draw, 10);
+	</script>
+
+    <p> When examining EEG data for oscillatory components, phase and amplitude are the two primary measures of interest. We may want to investigate how much of a given oscillation there is (the amplitude) or at what point in the oscillation we are during important moments of interest (the phase). </p>
+    <p> In principle, these measures are independent. In practice, this is not always the case, as changes in one parameter can make it harder to estimate the other. To get a sense of this, set the visualization to low amplitude and try to estimate the phase by looking at the oscillation. Typically, the phase of oscillations are unimportant for estimate amplitude, but low amplitudes may make it diffucult to estimate phase. </p>
+</body>
+</html>

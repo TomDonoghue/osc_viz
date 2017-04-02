@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title> Summing ERPs </title>
+	<!--<script type="text/javascript" src="d3/d3.min.js"> </script>-->
+	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	<style>
+        .axis path, 
+        .axis line {
+            fill: none;
+            stroke: gray;
+            stroke-width: 2;
+            shape-rendering: crispEdges;
+        }
+        .xaxis path, 
+        .xaxis line {
+            fill: none;
+            stroke: gray;
+            stroke-width: 1;
+            shape-rendering: crispEdges;
+            opacity: 0.6;
+        }
+
+	</style>
+</head>
+
+<body>
+
+    <h1> Averaging ERPs </h1>
+    <p> Calculating event related potentials requires averaging over many trials. However, as we saw in the 'summing sinusoids' section, adding together oscillatory signals is not always straightforward.</p>
+    <p> Here, even with two ERPs in which we can independently manipulate the amplitude and delay of the ERP, the average response can take various shapes. </p>
+    <p> This shows how sensitive ERPs can be. If there is any temporal jitter in the EEG responses, especially with differences in amplitudes as well, then the resulting ERP may look nothing like the component trials.</p>
+
+    <h2> Indivdiual ERPs </h2>
+
+    <div class="controls">
+        <label for=ampFader>Amplitude</label>
+        <input type=range min=0, max=1.0 value=1.0 id="ampFader1" step=0.01 width=150 oninput="updateAmp1(value)";><br/>
+        <label for=freqFader>Delay</label>
+        <input type=range min=0, max=100 value=0 id="phaseOffset1" step=0.01 width=150 oninput="updateOffset1(value)";><br/>
+    </div>
+
+	<script type="text/javascript">
+
+	dataset = [-0.107221,-0.2024541,-0.36556073,-0.35826402,-0.30870678,-0.4458553,-0.4862645,-0.5637836,-0.49424107,-0.51125197,-0.47764322,-0.40866742,-0.3686991,-0.23802419,-0.1434942,0.00461129,0.15968442,0.28842252,0.38513687,0.3408612,0.48266238,0.58369136,0.61563206,0.64759296,0.72055757,0.73425937,0.68429834,0.86987317,0.8323012,0.80126792,0.8887462,0.89593732,0.7624374,0.54152179,0.37998351,0.33944222,0.33335581,0.17494479,0.0437427,0.12639965,0.12313862,0.07809575,0.0732497,0.0199211,0.0466456,0.18899861,0.23017862,0.2536574,0.39776903,0.40133652,0.57672501,0.79700822,0.95047784,1.13443315,1.39046633,1.56631076,1.6548754,1.87064362,2.06504774,2.32815027,2.48301911,2.55436969,2.74933052,2.80354548,2.97812486,3.11423802,3.06595302,2.94324946,2.91802549,2.89178252,2.87389278,2.7174511,2.5565815,2.31215334,2.10901952,1.88742959,1.67216265,1.33194935,1.01276886,0.81680602,0.51712471,0.0701228,-0.24805658,-0.58168328,-0.86722213,-1.16438532,-1.43561077,-1.71643054,-1.86793256,-1.8620944,-2.00940967,-2.10893726,-2.09283161,-2.10758686,-2.12171292,-2.05306935,-1.98510826,-1.9226352,-1.9166168,-1.80600345,-1.61464334,-1.49848413,-1.28740752,-1.10593891,-0.90587133,-0.67902297,-0.36975026,-0.21843664,-0.15094721,0.00926613,0.29805192,0.33645755,0.40214658,0.72129029,0.79250842,0.80802095,0.79076928,0.77600199,0.78583997,0.74649632,0.63286239,0.45823801,0.39894074,0.34185869,0.28301486,0.17412564,0.01686884,0.11779916,0.16310163,0.05125453,-0.08172632,-0.17173889,-0.06856423,-0.18986717,-0.36929914,-0.45201692,-0.43977246,-0.4036296,-0.35261104,-0.22209339,-0.31008258,-0.35282227,-0.16404743,-0.23029463,-0.27884459,-0.1614175,-0.13796315,0.05043398,0.11375289,0.21633463];
+
+    temp1 = dataset;
+    temp2 = dataset;
+
+	// Set up variables for size of graphic
+	var w = 450;
+	var h = 250;
+	var padding = 30;
+
+    // Set vars for sliders
+    amp1 = 1.0;
+    amp2 = 1.0;
+    offset1 = [0, 0];
+    offset2 = [0, 0];
+
+	//Set up functions for scales and axes
+    var xScale = d3.scale.linear()
+        .domain([0, dataset.length + 50])
+        .range([padding, w-padding]);
+
+    var yScale = d3.scale.linear()
+        .domain([-d3.max(dataset)-0.2, d3.max(dataset)+0.2])
+        .range([h - padding, padding]);
+
+    var xAxis = d3.svg.axis()
+        .scale(xScale)
+        .ticks(0)
+        .tickSize(0)
+
+    var yAxis = d3.svg.axis()
+        .scale(yScale)
+        .orient("left")
+        .ticks(5);
+
+    // Set up the svgs
+    //var svg = d3.select("body")
+
+    var g1 = d3.select("body")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h);
+
+    // Line function
+    var lineFunction1 = d3.svg.line()
+    	.x(function(d,i) { return xScale(i); })
+    	.y(function(d,i) { return yScale(amp1 * d); })
+    	.interpolate("linear");
+
+    var lineFunction2 = d3.svg.line()
+        .x(function(d,i) { return xScale(i); })
+        .y(function(d,i) { return yScale(amp2 * d); })
+        .interpolate("linear");
+
+    // Draw the lines
+    var lineData1 = g1.append("path")
+        .attr("class", "dline")
+        .attr("d", lineFunction1(dataset))
+        .attr("stroke", "blue")
+        .attr("stroke-width", 2)
+        .attr("fill", "none")
+
+    //Add the axes
+    g1.append("g")
+            .attr("class", "xaxis")
+            //.attr("transform", "translate(0," + (h - padding) + ") ")
+            .attr("transform", "translate(0," + (h/2) + ") ")
+            .call(xAxis);
+
+    g1.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(" + padding + ",0)")
+            .call(yAxis);
+
+    // Set up stuff for amplitude slider
+    vis_amp1 = 1.0
+    function updateAmp1(amp) {
+        vis_amp1 = amp;
+    }
+
+    function get_amp1() {
+        return vis_amp1;
+    }
+
+    vis_offset1 = [0, 0];
+    function updateOffset1(offset) {
+        //vis_offset1 = d3.range(0,offset);
+
+        vis_offset1 = d3.range(0,offset);
+        for(var j=0; j < vis_offset1.length; j++){
+            vis_offset1[j] = 0;
+        }
+    }
+    function get_offset1() {
+        return vis_offset1;
+    }
+
+    function draw1() {
+        // Update amp
+        amp1 = get_amp1();
+        // Update offset
+        offset1 = get_offset1();
+        temp1 = offset1.concat(dataset);
+        // Redraw line
+        lineData1
+            .attr("d", lineFunction1(temp1))
+        }
+    
+    d3.timer(draw1, 10);
+
+    </script>
+
+    <div class="controls">
+        <label for=ampFader>Amplitude</label>
+        <input type=range min=0, max=1.0 value=1.0 id="ampFader2" step=0.01 width=150 oninput="updateAmp2(value)";><br/>
+        <label for=freqFader>Delay</label>
+        <input type=range min=0, max=100 value=0 id="phaseOffset2" step=0.01 width=150 oninput="updateOffset2(value)";><br/>
+    </div>
+
+    <script type="text/javascript">
+        
+    var g2 = d3.select("body")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h);
+
+    // Draw the lines
+    var lineData2 = g2.append("path")
+        .attr("class", "dline")
+        .attr("d", lineFunction2(dataset))
+        .attr("stroke", "blue")
+        .attr("stroke-width", 2)
+        .attr("fill", "none")
+
+    //Add the axes
+    g2.append("g")
+            .attr("class", "xaxis")
+            .attr("transform", "translate(0," + (h/2) + ") ")
+            .call(xAxis);
+
+    g2.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(" + padding + ",0)")
+            .call(yAxis);
+
+    // Set up stuff for amplitude slider
+    vis_amp2 = 1.0
+    function updateAmp2(amp) {
+        vis_amp2 = amp;
+    }
+
+    function get_amp2() {
+        return vis_amp2;
+    }
+
+    vis_offset2 = [0,0];
+    function updateOffset2(offset) {
+        vis_offset2 = d3.range(0,offset);
+        for(var i=0; i < vis_offset2.length; i++){
+            vis_offset2[i] = 0;
+        }
+    }
+
+    function get_offset2() {
+        return vis_offset2;
+    }
+
+    function draw2() {
+        // Update amp
+        amp2 = get_amp2();
+        // Update offset
+        offset2 = get_offset2();
+        temp2 = offset2.concat(dataset);
+        // Redraw the line
+        lineData2
+            .attr("d", lineFunction2(temp2))
+        }
+    
+    d3.timer(draw2, 10);
+
+    </script>
+
+    <h2> Average </h2>
+
+    <script type="text/javascript">
+
+    var res = d3.select("body")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h);
+
+    // Line function
+    var resLineFunction = d3.svg.line()
+        .x(function(d,i) { return xScale(i); })
+        .y(function(d,i) { return yScale(d); })
+        .interpolate("linear");
+
+    // Draw the lines
+    var resLine = res.append("path")
+        .attr("class", "dline")
+        .attr("d", resLineFunction((temp1 + temp2)/2))
+        .attr("stroke", "blue")
+        .attr("stroke-width", 2)
+        .attr("fill", "none")
+
+    //Add the axes
+    res.append("g")
+            .attr("class", "xaxis")
+            .attr("transform", "translate(0," + (h/2) + ") ")
+            .call(xAxis);
+
+    res.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(" + padding + ",0)")
+            .call(yAxis);
+
+    function draw3() {
+        out = [];
+        for(var k = 0; k < temp1.length; k++) {
+            out[k] = ((amp1 * temp1[k]) + (amp2 * temp2[k])) / 2;
+        }
+        // Redraw the line
+        resLine
+            .attr("d", resLineFunction(out))
+        }
+    
+    d3.timer(draw3, 10);
+
+    </script>
+
+</body>
+</html>

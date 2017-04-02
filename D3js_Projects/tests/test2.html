@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title> Test D3 </title>
+		<script type="text/javascript" src="d3/d3.min.js"> </script>
+	<!--	<link href="ERP.css" rel="stylesheet"> -->
+	</head>
+
+
+	<body>
+		<div id="chart"></div>
+<!-- 
+		<script type="text/javascript">
+			d3.select("body").append("p").text("New Paragraph!");
+		</script>	
+-->
+
+		<script type="text/javascript">
+			var dataset = [5, 10, 15, 20, 25];
+
+			d3.select("body").selectAll("p")
+				.data(dataset)
+				.enter()
+				.append("p")
+				.text(function(d) {return "I can count up to " + d; })
+				.style("color", function(d){
+					if(d>15){ 
+						return "red";
+					} else {
+						return "black";
+					}
+				})
+
+		</script>
+	</body>
+
+</html>

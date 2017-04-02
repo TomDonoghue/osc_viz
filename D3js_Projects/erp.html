@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title> ERPs </title>
+	<!--<script type="text/javascript" src="d3/d3.min.js"> </script>-->
+	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	<style>
+
+		.xaxis path, 
+		.xaxis line {
+			fill: none;
+			stroke: black;
+			stroke-width: 2;
+			shape-rendering: crispEdges;
+		}
+
+		.xaxis text {
+			font-family: sans-serif;
+			font-size: 12px
+		}
+
+		.yaxis path, 
+		.yaxis line {
+			fill: none;
+			stroke: black;
+			stroke-width: 2;
+			shape-rendering: crispEdges;
+		}
+
+		.axisMid path,
+		.axisMid line {
+			fill: none;
+			stroke: gray;
+			shape-rendering: crispEdges;
+		}
+
+		.axisMid text {
+			display: none;
+		}
+
+		.circ:hover {
+			fill:red;
+		}
+
+		.labels:hover {
+			font-size:18px;
+		}
+
+		.labelText {
+			font-family: sans-serif;
+			font-size: 10px;
+			color: gray;
+			opacity: 0.85;
+			visibility: hidden;
+		}
+
+		.circ:hover ~ .labelText {
+			visibility: visible;
+		}
+
+		.tooltip {
+			position: absolute;
+			text-align: center;
+			width: 110px;
+			height: 100px;
+			padding: 2px;
+			font: 14px sans-serif;
+			background: lightsteelblue;
+			border: 0px;
+			border-radius: 8px;
+			pointer-events: none;
+		}
+
+	</style>
+</head>
+
+<body>
+
+	<h1> Event Related Potentials (ERPs) </h1>
+
+	<p> Event related potentials (ERPs) are a measure of electrical brain activity related to some event of interest. Typically, this event, is some kind of stimulus presented to the subject, such as an image or sound. </p>
+	<p> For single trials, ERPs are really messy. ERP research typically presents hundreds or thousands of trials to a subject, in order to average over the trials to pull out the brain activity of interest. The logic here is that 'noise' will be random across trials, and be averaged out, and what is left in the ERP is the stereotyped brain activity related to the stimuli you presented. </p>
+	<p> For historical reasons, ERPs are ofen plotted with negative voltages up, and this is still standard practice for many EEG researchers. It is, however, not universal. In these visualizations, the more general approach of having positive values upwards is set as the default, however there is a toggle button if you prefer to view the graphic with negative upward. </p>
+
+	</br>
+	</br>
+
+	<div id="option1">
+		<input 	name="Switch Axes: Neg Up"
+				type="button"
+				value="Switch Axes"
+				onclick="switchPlot()" />
+	</div>
+
+	<script type="text/javascript">
+
+		// Set up variables for size of graphic
+		var w = 550;
+		var h = 350;
+		var padding = 40;
+
+		// Data
+		var dataset = [[0, 0, "", "", ""], [50, 0, "", "", ""], [70, 0.3, "P100", "The P100 is an early Visually Evoked Potential (VEP). It is found near the back of the head.", "80-130"], [110, -0.4, "N100", "The N100 is frontal/central, amd is elicited by unpredictable stimuli.", "80-120"], [170, 0.3, "P200", "The P200 is a general EPR that is evoked by visual and auditory stimuli.", "150-275"], [210, -0.2, "N200", "The N200 is found frontally, and is thought to be a mismatch detector.", "200-350"], [300, 0.8, "P300", "The P300 is thought to reflect stimulus evaluation or categorization.", "250-500"], [420, -0.6, "N400", "The N400 is often studied in language, and largest for unexpected stimuli.", "250-500"], [500, 0, "", "", ""]];
+
+		//Set up functions for scales and axes
+		var xScale = d3.scale.linear()
+				.domain([0, d3.max(dataset, function(d) {return d[0]; })])
+				.range([padding, w-padding*2]);
+
+		var yScale = d3.scale.linear()
+				.domain([-1.1, 1.1])
+				.range([h - padding, padding]);
+
+		var midX = d3.svg.axis()
+				.scale(xScale)
+				.ticks(0)
+				.tickSize(0)
+
+		var xAxis = d3.svg.axis()
+				.scale(xScale)
+				.orient("bottom")
+				.ticks(6)
+				.tickValues([0, 100, 200, 300, 400, 500]);
+
+		var yAxis = d3.svg.axis()
+				.scale(yScale)
+				.orient("left")
+				.ticks(5);
+
+		// Create svg element
+		var svg = d3.select("body")
+				.append("svg")
+				.attr("width", w)
+				.attr("height", h);
+
+		//Add circles to svg's to hold datapoints
+		var dat = svg.selectAll("circle")
+				.data(dataset)
+				.enter()
+
+		// Add data to circles
+		dat		
+			.append("circle")
+			.attr("class", "circ")
+			.attr("cx", function(d) {
+				return xScale(d[0]);
+			})
+			.attr("cy", function(d){
+				return yScale(d[1]);
+			})
+			.attr("r", function(d){
+				return 5;
+			})
+		
+		// Add text (labels)
+		dat
+			.append("text")
+			.attr("class", "labels")
+			.attr("dx", function(d){return xScale(d[0])})
+			.attr("dy", function(d) {
+				if(yScale(d[1]) > h/2) { return yScale(d[1])+20}
+				else {return yScale(d[1])-10}
+			})
+			.text(function(d) {return d[2]} )
+			.on("mouseover", function(d) {
+				div.transition(500)
+					.style("opacity", 0.9)
+				div.html(d[3])
+					.style("left", xScale(d[0])+"px")
+					.style("top", yScale(Math.sin(d[1])+"px"))
+			})
+			.on("mouseout", function(d) {
+				div.transition(500)
+				.style("opacity", 0.0)
+			})				
+
+		var div = d3.select("body").append("div")
+			.attr("class", "tooltip")
+			.style("opacity", 0);
+
+		// Add text descriptions
+		dat
+			.append("text")
+			.attr("class", "labelText")
+			.attr("dx", function(d) {return xScale(d[0])})
+			.attr("dy", function(d) {
+				if(yScale(d[1]) > h/2) { return yScale(d[1])+30}
+				else {return yScale(d[1])-25}
+			})
+			.text(function(d) {return d[4]})
+
+			
+		// Add line to plot
+ 		var lineFunction = d3.svg.line()
+            .x(function(d) { return xScale(d[0]); })
+            .y(function(d) { return yScale(d[1]); })
+            .interpolate("cardinal");
+
+    	var lineGraph = svg.append("path")
+            .attr("d", lineFunction(dataset))
+            .attr("class", "gline")
+            .attr("stroke", "blue")
+            .attr("stroke-width", 2)
+            .attr("fill", "none");
+
+		//Add the axes
+		svg.append("g")
+			.attr("class", "xaxis")
+			.attr("transform", "translate(0," + (h - padding) + ") ")
+			.call(xAxis);
+
+		svg.append("g")
+			.attr("class", "axisMid")
+			.attr("transform", "translate(0," + (h/2) + ") ")
+			.call(midX);
+
+		svg.append("g")
+			.attr("class", "yaxis")
+			.attr("transform", "translate(" + padding + ",0)")
+			.call(yAxis);
+
+		// Switch Axes function
+		function switchPlot() {
+			// If checks which configuration it is currently in, to toggle 
+			if(yScale.domain()[0] == -1.1) {
+				yScale	
+					.domain([1.1, -1.1])
+					.range([h - padding, padding]);
+				svg.select(".yaxis")
+					.transition().duration(2000)
+					.call(yAxis);
+			}
+			else {
+				yScale	.domain([-1.1, 1.1])
+					.range([h - padding, padding]);
+				svg.select(".yaxis")
+					.transition().duration(2000)
+					.call(yAxis);	
+				}
+
+			// Redraw the y values of circles with flipped axes
+			d3.selectAll(".circ")
+				.transition().duration(2300)
+				.attr("cy", function(d){
+					return yScale(d[1])
+				})
+
+			// Redraw the y vales of line with flipped axes
+			d3.selectAll(".gline")
+				.transition().duration(2600)
+				.attr("d", lineFunction(dataset))
+
+			// Redraw the y values of text labels with flipped axes
+			d3.selectAll(".labels")
+				.transition().duration(3000)
+				.attr("dy", function(d) {
+					if(yScale(d[1]) > h/2) { return yScale(d[1])+20}
+					else {return yScale(d[1])-10}
+				})
+
+			// Redraw the y values of the labelText with flipped axes
+			d3.selectAll(".labelText")
+				.attr("dy", function(d) {
+					if(yScale(d[1]) > h/2) { return yScale(d[1])+30}
+					else {return yScale(d[1])-25}
+			})
+		}
+
+	</script>
+
+	</br>
+	</br>
+	</br>
+	<p> ERPs are labelled by the direction they go (positive or negative), plus the approximate time they peak. There can be variability in the timing of the peak ERPs, often relating to task designs. </p>
+	<p> If you hover of the dots in the visualization you will see an estimate of the full range of times at which these ERPs can peak. </p>
+	<p> Most ERPs are associated with some particular tasks and areas. If you hover over the labels in this visualization, you will seen some information about each ERP. </p>
+
+</body>
+</html>
